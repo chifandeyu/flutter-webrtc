@@ -34,6 +34,7 @@ using namespace flutter;
 class FlutterVideoRenderer;
 class FlutterRTCDataChannelObserver;
 class FlutterPeerConnectionObserver;
+class DeviceListener;
 
 // foo.StringValue() becomes std::get<std::string>(foo)
 // foo.IsString() becomes std::holds_alternative<std::string>(foo)
@@ -113,6 +114,7 @@ class FlutterWebRTCBase {
   friend class FlutterVideoRendererManager;
   friend class FlutterDataChannel;
   friend class FlutterPeerConnectionObserver;
+  friend class DeviceListener;
   enum ParseConstraintType { kMandatory, kOptional };
 
  public:
@@ -150,6 +152,14 @@ class FlutterWebRTCBase {
   scoped_refptr<RTCMediaTrack> MediaTracksForId(const std::string& id);
 
   void RemoveTracksForId(const std::string& id);
+  void switchToAudioOutput(std::string id);
+  void setAudioOutput(int index);
+  void switchToAudioInput(const std::string& id);
+  void activeDefaultAudioInput();
+  void setAudioInput(int index);
+
+  void activeAudioOutputDevice(LPCWSTR pwstrDeviceId);
+  void activeAudioInputDevice(LPCWSTR pwstrDeviceId);
 
  private:
   void ParseConstraints(const EncodableMap& src,
@@ -182,6 +192,7 @@ class FlutterWebRTCBase {
  protected:
   BinaryMessenger* messenger_;
   TextureRegistrar* textures_;
+  DeviceListener* pNotifyClient_;
 };
 
 }  // namespace flutter_webrtc_plugin
