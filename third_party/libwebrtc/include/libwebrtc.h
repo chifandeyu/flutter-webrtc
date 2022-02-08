@@ -8,7 +8,7 @@ namespace libwebrtc {
 
 class LibWebRTC {
  public:
-  LIB_WEBRTC_API static bool Initialize();
+  LIB_WEBRTC_API static bool Initialize(const char* webrtcLogDir = nullptr, LoggingLevel level = LoggingLevel::WARNING);
 
   LIB_WEBRTC_API static scoped_refptr<RTCPeerConnectionFactory>
   CreateRTCPeerConnectionFactory();

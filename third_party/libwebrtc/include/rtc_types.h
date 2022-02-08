@@ -30,6 +30,21 @@ enum class MediaSecurityType { kSRTP_None = 0, kSDES_SRTP, kDTLS_SRTP };
 
 enum class RTCMediaType { ANY, AUDIO, VIDEO, DATA };
 
+//  VERBOSE: This level is for data which we do not want to appear in the
+//   normal debug log, but should appear in diagnostic logs.
+//  INFO: Chatty level used in debugging for all sorts of things, the default
+//   in debug builds.
+//  WARNING: Something that may warrant investigation.
+//  LERROR: Something that should not have occurred.
+//  NONE: Don't log.
+enum LoggingLevel {
+  VERBOSE,
+  INFO,
+  WARNING,
+  LERROR,
+  NONE,
+};
+
 using string = portable::string;
 
 //template <typename Key, typename T>
