@@ -41,6 +41,7 @@ public:
   IMMDeviceEnumerator* _pEnumerator;
   bool _hasRegister;
   FlutterWebRTCBase* base_;
+  DWORD _currentState;
 };
 }  // namespace flutter_webrtc_plugin
 #endif  //_DEVICELISTENER_H_

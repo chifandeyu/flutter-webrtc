@@ -526,33 +526,34 @@ void FlutterWebRTCBase::activeDefaultAudioInput() {
   std::thread thObj = std::thread([this]() {
     std::lock_guard<std::mutex> lock(g_mutex);
     Sleep(500);
-    int32_t ret = 0;
-    const auto recording = audio_device_->Recording() || audio_device_->RecordingIsInitialized();
+    const auto recording =
+        audio_device_->Recording() || audio_device_->RecordingIsInitialized();
     if (recording) {
-      ret = audio_device_->StopRecording();
-      if (0 != ret) {
-        std::cout << "[webrtc_base] StopRecording failed" <<std::endl;
-      }
+      audio_device_->StopRecording();
     }
 
-    if (const auto result = audio_device_->SetRecordingDevice(
-            RTCAudioDevice::kDefaultCommunicationDevice)) {
-    std::cout
-        << "[webrtc_base] setAudioInputDevice(): SetRecordingDevice(kDefaultCommunicationDevice) failed: "
-        << result << "." << std::endl;
-    } else {
-    std::cout
-        << "[webrtc_base] setAudioInputDevice(): SetRecordingDevice(kDefaultCommunicationDevice) success."
-        << std::endl;
+    if (0 != audio_device_->SetRecordingDevice(
+                libwebrtc::RTCAudioDevice::kDefaultCommunicationDevice)) 
+    {
+        std::cout << "[webrtc_base] "
+            "SetRecordingDevice(kDefaultCommunicationDevice) failed."
+            << std::endl;
     }
+    else
+    {
+        std::cout << "[webrtc_base] "
+            "SetRecordingDevice(kDefaultCommunicationDevice) success."
+            << std::endl;
+    }
+    //
     if (recording && audio_device_->InitRecording() == 0) {
-      ret = audio_device_->StartRecording();
+      int32_t ret = audio_device_->StartRecording();
       if (0 != ret) {
         std::cout << "[webrtc_base] StartRecording failed" << std::endl;
       }
     }
-    std::cout << "==== activeDefaultAudioInput thread ====="
-              << std::this_thread::get_id() <<  std::endl;
+    std::cout << "==== activeDefaultAudioInput thread =====" << std::this_thread::get_id()
+              << std::endl;
   });
 
   thObj.detach();
@@ -568,16 +569,24 @@ void FlutterWebRTCBase::setAudioInput(int index) {
     }
     uint16_t indexU = static_cast<uint16_t>(index);
     if (const auto result = audio_device_->SetRecordingDevice(indexU)) {
-      std::cout << "[webrtc_base] setAudioInputDevice(): index = " << indexU <<
-                   "SetRecordingDevice(kDefaultCommunicationDevice) failed: "
-                << result << "." << std::endl;
+      std::cout << "[webrtc_base] SetRecordingDevice( " << indexU <<
+                   ") failed: " << result << "." << std::endl << "retry default" << std::endl;
+      if( 0 == audio_device_->SetRecordingDevice(
+                   libwebrtc::RTCAudioDevice::kDefaultCommunicationDevice)) {
+        std::cout << "[webrtc_base] SetRecordingDevice(kDefaultCommunicationDevice) success." << std::endl;
+      } else {
+        std::cout << "[webrtc_base] SetRecordingDevice(kDefaultCommunicationDevice) failed."
+                  << std::endl;
+      }
+      
     } else {
-      std::cout << "[webrtc_base] setAudioInputDevice(): "
-                   "SetRecordingDevice(kDefaultCommunicationDevice) success."
-                << std::endl;
+      std::cout << "[webrtc_base] SetRecordingDevice(" << indexU << ") success." << std::endl;
     }
     if (recording && audio_device_->InitRecording() == 0) {
-      audio_device_->StartRecording();
+      int32_t ret = audio_device_->StartRecording();
+      if (0 != ret) {
+        std::cout << "[webrtc_base] StartRecording failed" << std::endl;
+      }
     }
     std::cout << "==== setAudioInput thread ====="
               << std::this_thread::get_id() << std::endl;
@@ -604,11 +613,12 @@ void FlutterWebRTCBase::activeAudioOutputDevice(LPCWSTR pwstrDeviceId) {
       std::string strGuidUTF8 = szGuidUTF8;
 //      std::cout << "================ Playout strGuidUTF8 = " << strGuidUTF8 << std::endl;
       if (strGuidUTF8 == strDeviceId) {
-        std::cout << "[webrtc_base] ACTIVE***********************************" << std::endl
+        std::cout << "[webrtc_base] ACTIVE***********************************"
+                  << std::endl
                   << "PlayoutDevice name: " << strNameUTF8 << std::endl
-                  << " guid: " << strGuidUTF8 << std::endl
-                  << "*****************************************" << std::endl;
+                  << " guid: " << strGuidUTF8 << std::endl;
         switchToAudioOutput(strDeviceId);
+        std::cout << "*****************************************" << std::endl;
         break;
       }
     }
@@ -638,9 +648,9 @@ void FlutterWebRTCBase::activeAudioInputDevice(LPCWSTR pwstrDeviceId) {
         std::cout << "[webrtc_base] ACTIVE***********************************"
                   << std::endl
                   << "RecordingDeviceName name: " << strNameUTF8 << std::endl
-                  << " guid: " << strGuidUTF8 << std::endl
-                  << "*****************************************" << std::endl;
+                  << " guid: " << strGuidUTF8 << std::endl;
         switchToAudioInput(strDeviceId);
+        std::cout << "*****************************************" << std::endl;
         break;
       }
     }

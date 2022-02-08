@@ -59,7 +59,11 @@ void printHResult(const char* errorMessage, HRESULT hr) {
 }
 
 DeviceListener::DeviceListener(FlutterWebRTCBase* base)
-    : base_(base), _cRef(1), _pEnumerator(NULL), _hasRegister(false) {}
+    : base_(base),
+    _cRef(1),
+    _pEnumerator(NULL),
+    _hasRegister(false),
+    _currentState(0x00000001) { }
 
 DeviceListener::~DeviceListener(){SAFE_RELEASE(_pEnumerator)}
 
@@ -168,12 +172,18 @@ HRESULT __stdcall DeviceListener::OnDefaultDeviceChanged(
       break;
   }
 
-  if (role == eConsole && flow == eRender) {
-    base_->activeAudioOutputDevice(pwstrDeviceId);
+  if (role == eConsole) {
+    if (flow == eRender) {
+      base_->activeAudioOutputDevice(pwstrDeviceId);
+    }
+    //plug in the earphone
+    if (flow == eCapture) {
+      base_->activeAudioInputDevice(pwstrDeviceId);
+    }
   }
-
-  if (role == eConsole && flow == eCapture) {
-    base_->activeAudioInputDevice(pwstrDeviceId);
+  if (role == eCommunications && flow != eCapture && _currentState == DEVICE_STATE_UNPLUGGED) {
+    // only DeviceState unplugg notify
+    base_->setAudioInput(0);
   }
   cout << "  ====>New default device: flow = " << pszFlow
        << ", role = " << pszRole 
@@ -199,7 +209,7 @@ HRESULT __stdcall DeviceListener::OnDeviceRemoved(LPCWSTR pwstrDeviceId) {
 HRESULT __stdcall DeviceListener::OnDeviceStateChanged(LPCWSTR pwstrDeviceId,
                                                        DWORD dwNewState) {
   const char* pszState = "Unkown";
-
+  _currentState = dwNewState;
   //_PrintDeviceName(pwstrDeviceId);
   std::string strDeviceId = wide_to_ansi(pwstrDeviceId);
   switch (dwNewState) {
@@ -225,10 +235,6 @@ HRESULT __stdcall DeviceListener::OnDeviceStateChanged(LPCWSTR pwstrDeviceId,
       //if (iAudioDeviceCount == 1) {
       //  base_->setAudioOutput(0);
       //}
-      //const int16_t iInputDeviceCount = base_->audio_device_->RecordingDevices();
-      //if (iInputDeviceCount == 1) {
-      //  base_->setAudioInput(0);
-      //}
       //std::cout << "==== iaudioDeviceCount = " << iAudioDeviceCount << std::endl;
     }
       break;
@@ -238,7 +244,7 @@ HRESULT __stdcall DeviceListener::OnDeviceStateChanged(LPCWSTR pwstrDeviceId,
     //  break;
   }
 
-  printf("  ====>New device state is DEVICE_STATE_%s (0x%8.8x) id = %s\n",
+  printf("  ******>New device state is DEVICE_STATE_%s (0x%8.8x) id = %s\n",
          pszState, dwNewState, strDeviceId.c_str());
 
   return S_OK;
