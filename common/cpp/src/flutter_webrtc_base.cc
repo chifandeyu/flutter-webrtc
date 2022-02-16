@@ -370,19 +370,22 @@ void FlutterWebRTCBase::switchToAudioOutput(std::string id) {
     const auto finish = [&]() {
         if (!specific) {
             if (const auto result = audio_device_->SetPlayoutDevice(
-                RTCAudioDevice::kDefaultCommunicationDevice)) {
+                  RTCAudioDevice::kDefaultDevice)) {
                 std::cout
                     << "[webrtc_base] setAudioOutputDevice(" << id
-                    << "): SetPlayoutDevice(kDefaultCommunicationDevice) failed: "
+                    << "): SetPlayoutDevice(kDefaultDevice) failed: "
                     << result << "." << std::endl;
             } else {
                 std::cout
                     << "[webrtc_base] setAudioOutputDevice(" << id
-                    << "): SetPlayoutDevice(kDefaultCommunicationDevice) success." << std::endl;
+                    << "): SetPlayoutDevice(kDefaultDevice) success." << std::endl;
             }
         }
         if (audio_device_->InitPlayout() == 0) {
-            audio_device_->StartPlayout();
+          int32_t ret = audio_device_->StartPlayout();
+          if (0 != ret) {
+            std::cout << "==== Failed to Start Playout." << std::endl;
+          }
         }
     };
 
@@ -473,17 +476,20 @@ void FlutterWebRTCBase::switchToAudioInput(const std::string& id) {
   const auto finish = [&] {
     if (!specific) {
         if (const auto result = audio_device_->SetRecordingDevice(
-                RTCAudioDevice::kDefaultCommunicationDevice)) {
+              RTCAudioDevice::kDefaultDevice)) {
         std::cout << "[webrtc_base] setAudioInputDevice(" << id.c_str()
-            << "): SetRecordingDevice(kDefaultCommunicationDevice) failed: "
+            << "): SetRecordingDevice(kDefaultDevice) failed: "
             << result << "." << std::endl;
         } else {
         std::cout << "[webrtc_base] setAudioInputDevice(" << id.c_str()
-            << "): SetRecordingDevice(kDefaultCommunicationDevice) success." << std::endl;
+            << "): SetRecordingDevice(kDefaultDevice) success." << std::endl;
         }
     }
-    if (recording && audio_device_->InitRecording() == 0) {
-        audio_device_->StartRecording();
+    if (audio_device_->InitRecording() == 0) {
+      int32_t ret = audio_device_->StartRecording();
+      if (0 != ret) {
+        std::cout << "[webrtc_base] StartRecording failed" << std::endl;
+      }
     }
   };
   if (id == "default" || id.empty()) {
@@ -533,20 +539,20 @@ void FlutterWebRTCBase::activeDefaultAudioInput() {
     }
 
     if (0 != audio_device_->SetRecordingDevice(
-                libwebrtc::RTCAudioDevice::kDefaultCommunicationDevice)) 
+                libwebrtc::RTCAudioDevice::kDefaultDevice)) 
     {
         std::cout << "[webrtc_base] "
-            "SetRecordingDevice(kDefaultCommunicationDevice) failed."
+            "SetRecordingDevice(kDefaultDevice) failed."
             << std::endl;
     }
     else
     {
         std::cout << "[webrtc_base] "
-            "SetRecordingDevice(kDefaultCommunicationDevice) success."
+            "SetRecordingDevice(kDefaultDevice) success."
             << std::endl;
     }
     //
-    if (recording && audio_device_->InitRecording() == 0) {
+    if (audio_device_->InitRecording() == 0) {
       int32_t ret = audio_device_->StartRecording();
       if (0 != ret) {
         std::cout << "[webrtc_base] StartRecording failed" << std::endl;
@@ -572,17 +578,17 @@ void FlutterWebRTCBase::setAudioInput(int index) {
       std::cout << "[webrtc_base] SetRecordingDevice( " << indexU <<
                    ") failed: " << result << "." << std::endl << "retry default" << std::endl;
       if( 0 == audio_device_->SetRecordingDevice(
-                   libwebrtc::RTCAudioDevice::kDefaultCommunicationDevice)) {
-        std::cout << "[webrtc_base] SetRecordingDevice(kDefaultCommunicationDevice) success." << std::endl;
+                   libwebrtc::RTCAudioDevice::kDefaultDevice)) {
+        std::cout << "[webrtc_base] SetRecordingDevice(kDefaultDevice) success." << std::endl;
       } else {
-        std::cout << "[webrtc_base] SetRecordingDevice(kDefaultCommunicationDevice) failed."
+        std::cout << "[webrtc_base] SetRecordingDevice(kDefaultDevice) failed."
                   << std::endl;
       }
       
     } else {
       std::cout << "[webrtc_base] SetRecordingDevice(" << indexU << ") success." << std::endl;
     }
-    if (recording && audio_device_->InitRecording() == 0) {
+    if (audio_device_->InitRecording() == 0) {
       int32_t ret = audio_device_->StartRecording();
       if (0 != ret) {
         std::cout << "[webrtc_base] StartRecording failed" << std::endl;

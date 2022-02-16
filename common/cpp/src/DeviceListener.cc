@@ -63,7 +63,7 @@ DeviceListener::DeviceListener(FlutterWebRTCBase* base)
     _cRef(1),
     _pEnumerator(NULL),
     _hasRegister(false),
-    _currentState(0x00000001) { }
+    _currentState(0x00000000) {}
 
 DeviceListener::~DeviceListener(){SAFE_RELEASE(_pEnumerator)}
 
@@ -158,36 +158,39 @@ HRESULT __stdcall DeviceListener::OnDefaultDeviceChanged(
       break;
   }
 
-  std::string strDeviceId = wide_to_ansi(pwstrDeviceId);
-  switch (role) {
-    case eConsole:
-      pszRole = "eConsole";
-      break;
-    case eMultimedia:
-      pszRole = "eMultimedia";
-      break;
-    case eCommunications: {
-      pszRole = "eCommunications";
+  if (pwstrDeviceId) {
+    std::string strDeviceId = wide_to_ansi(pwstrDeviceId);
+    switch (role) {
+      case eConsole:
+        pszRole = "eConsole";
+        break;
+      case eMultimedia:
+        pszRole = "eMultimedia";
+        break;
+      case eCommunications: {
+        pszRole = "eCommunications";
+      } break;
     }
-      break;
+
+    if (role == eConsole) {
+      if (flow == eRender) {
+        base_->activeAudioOutputDevice(pwstrDeviceId);
+      }
+      // plug in the earphone
+      if (flow == eCapture) {
+        base_->activeAudioInputDevice(pwstrDeviceId);
+      }
+    }
+
+    cout << "  ====>New default device: flow = " << pszFlow
+         << ", role = " << pszRole << ", id = " << strDeviceId << endl;
   }
 
-  if (role == eConsole) {
-    if (flow == eRender) {
-      base_->activeAudioOutputDevice(pwstrDeviceId);
-    }
-    //plug in the earphone
-    if (flow == eCapture) {
-      base_->activeAudioInputDevice(pwstrDeviceId);
-    }
-  }
   if (role == eCommunications && flow != eCapture && _currentState == DEVICE_STATE_UNPLUGGED) {
     // only DeviceState unplugg notify
+    std::cout << " ==== device state unplugged and default device changed ====" << std::endl;
     base_->setAudioInput(0);
   }
-  cout << "  ====>New default device: flow = " << pszFlow
-       << ", role = " << pszRole 
-      << ", id = " << strDeviceId << endl;
 
   return S_OK;
 }
@@ -287,8 +290,9 @@ LPWSTR DeviceListener::getDefaultAudioEndpoint() {
   IPropertyStore* pProps = NULL;
 
   hr = device->OpenPropertyStore(STGM_READ, &pProps);
-  if (hr) {
+  if (FAILED(hr)) {
     printHResult("GetDefaultAudioEndpoint failed", hr);
+    return TEXT("");
   }
 
   PROPVARIANT varName;
@@ -296,11 +300,13 @@ LPWSTR DeviceListener::getDefaultAudioEndpoint() {
   PropVariantInit(&varName);
 
   hr = pProps->GetValue(PKEY_Device_FriendlyName, &varName);
-  if (hr) {
+  if (FAILED(hr)) {
     printHResult("GetDefaultAudioEndpoint failed", hr);
+  } else {
+    printf("GetDefaultAudioEndpoint: %ls\n", varName.pwszVal);
+    PropVariantClear(&varName);
+    pProps->Release();
   }
-
-  printf("GetDefaultAudioEndpoint: %ls\n", varName.pwszVal);
 
   device->Release();
 
